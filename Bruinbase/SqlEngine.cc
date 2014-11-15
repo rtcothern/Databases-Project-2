@@ -132,11 +132,10 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 {
   RecordFile rf;
-  
+  RecordId rid;
+
   // TODO: Care about filesystem errors
   rf.open(table + ".tbl", 'w');
-  
-  RecordId rid = rf.endRid();
 
   // TODO: Care about file not existing/filesystem errors
   ifstream input(loadfile.c_str());
