@@ -10,12 +10,13 @@
 #include <cstdio>
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "Bruinbase.h"
 #include "SqlEngine.h"
 
 using namespace std;
 
-// external functions and variables for load file and sql command parsing 
+// external functions and variables for load file and sql command parsing
 extern FILE* sqlin;
 int sqlparse(void);
 
@@ -38,7 +39,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   RecordId   rid;  // record cursor for table scanning
 
   RC     rc;
-  int    key;     
+  int    key;
   string value;
   int    count;
   int    diff;
@@ -94,11 +95,11 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
       }
     }
 
-    // the condition is met for the tuple. 
+    // the condition is met for the tuple.
     // increase matching tuple counter
     count++;
 
-    // print the tuple 
+    // print the tuple
     switch (attr) {
     case 1:  // SELECT key
       fprintf(stdout, "%d\n", key);
@@ -130,7 +131,23 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 
 RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 {
-  /* your code here */
+  RecordFile rf;
+  
+  // TODO: Care about filesystem errors
+  rf.open(table + ".tbl", 'w');
+  
+  RecordId rid = rf.endRid();
+
+  // TODO: Care about file not existing/filesystem errors
+  ifstream input(loadfile.c_str());
+  string line;
+  int key;
+  string value;
+  while(getline(input, line)) {
+    // TODO: Care about return codes
+    parseLoadLine(line, key, value);
+    rf.append(key, value, rid); 
+  }
 
   return 0;
 }
@@ -140,7 +157,7 @@ RC SqlEngine::parseLoadLine(const string& line, int& key, string& value)
     const char *s;
     char        c;
     string::size_type loc;
-    
+
     // ignore beginning white spaces
     c = *(s = line.c_str());
     while (c == ' ' || c == '\t') { c = *++s; }
@@ -154,9 +171,9 @@ RC SqlEngine::parseLoadLine(const string& line, int& key, string& value)
 
     // ignore white spaces
     do { c = *++s; } while (c == ' ' || c == '\t');
-    
+
     // if there is nothing left, set the value to empty string
-    if (c == 0) { 
+    if (c == 0) {
         value.erase();
         return 0;
     }
