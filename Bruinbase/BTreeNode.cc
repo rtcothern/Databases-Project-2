@@ -9,7 +9,10 @@ using namespace std;
  * @return 0 if successful. Return an error code if there is an error.
  */
 RC BTLeafNode::read(PageId pid, const PageFile& pf)
-{ return 0; }
+{ 
+    int status = pf.read(pid,buffer);
+    return status;
+}
     
 /*
  * Write the content of the node to the page pid in the PageFile pf.
@@ -18,14 +21,17 @@ RC BTLeafNode::read(PageId pid, const PageFile& pf)
  * @return 0 if successful. Return an error code if there is an error.
  */
 RC BTLeafNode::write(PageId pid, PageFile& pf)
-{ return 0; }
+{ 
+    int status = pf.write(pid, buffer);
+    return status;
+}
 
 /*
  * Return the number of keys stored in the node.
  * @return the number of keys in the node
  */
 int BTLeafNode::getKeyCount()
-{ return 0; }
+{ return numKeys; }
 
 /*
  * Insert a (key, rid) pair to the node.
@@ -34,7 +40,21 @@ int BTLeafNode::getKeyCount()
  * @return 0 if successful. Return an error code if the node is full.
  */
 RC BTLeafNode::insert(int key, const RecordId& rid)
-{ return 0; }
+{ 
+    if(getKeyCount() >= MAX_KEYS){
+        BTLeafNode *newNode = new BTLeafNode();
+        int sibKey;
+        int result = insertAndSplit(key, rid, newNode, sibKey);
+        return result;
+    } else{
+        RecordId* rLoc = buffer+numKeys*3+2; //Entries are ENTRY_SIZE bytes, rid's are 8 bytes, thus add 2 afterwards to get past the last rid
+        int* kLoc = buffer+numKeys*3+4;
+        rLoc[0] = rid;
+        kLoc[1] = key;
+        numkeys++;
+        return 0;
+    }
+}
 
 /*
  * Insert the (key, rid) pair to the node
@@ -48,7 +68,11 @@ RC BTLeafNode::insert(int key, const RecordId& rid)
  */
 RC BTLeafNode::insertAndSplit(int key, const RecordId& rid, 
                               BTLeafNode& sibling, int& siblingKey)
-{ return 0; }
+{ 
+    int half = (MAX_KEYS * 3) / 2;
+    RecordId* splitPoint = buffer+half;
+    return 0; 
+}
 
 /*
  * Find the entry whose key value is larger than or equal to searchKey
@@ -59,7 +83,23 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
  * @return 0 if successful. Return an error code if there is an error.
  */
 RC BTLeafNode::locate(int searchKey, int& eid)
-{ return 0; }
+{ 
+    for(int i = 0; i < MAX_KEYS; i++){
+        // int* key = buffer[i*ENTRY_SIZE+8];
+        // if(*key >= searchKey){
+        //     eid = (i+5)/4;
+        //     return eid;
+        // }
+        int currentKey;
+        RecordId rid;
+        readEntry(i, currentKey, rid);
+        if(currentKey >= searchKey){
+            eid = i;
+            return 0;
+        }
+    }
+    return -1;
+}
 
 /*
  * Read the (key, rid) pair from the eid entry.
@@ -69,7 +109,14 @@ RC BTLeafNode::locate(int searchKey, int& eid)
  * @return 0 if successful. Return an error code if there is an error.
  */
 RC BTLeafNode::readEntry(int eid, int& key, RecordId& rid)
-{ return 0; }
+{
+    int offset = eid*ENTRY_SIZE; //RecordID consists of two ints, key is one int
+    RecordId* rLoc = buffer+offset;
+    int* kLoc = buffer+offset+2;
+    rid = rLoc[0];
+    key = kLoc[0];
+    return 0;
+}
 
 /*
  * Return the pid of the next slibling node.
@@ -85,6 +132,10 @@ PageId BTLeafNode::getNextNodePtr()
  */
 RC BTLeafNode::setNextNodePtr(PageId pid)
 { return 0; }
+
+
+//------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 
 /*
  * Read the content of the node from the page pid in the PageFile pf.
