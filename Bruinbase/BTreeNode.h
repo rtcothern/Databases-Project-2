@@ -18,12 +18,14 @@
  */
 class BTLeafNode {
   public:
-    int numKeys;
-    const int MAX_KEYS = 140;
-    const int ENTRY_SIZE;
+    const int MAX_ENTRIES = 84;
+    const int ENTRY_SIZE = 12;
+    const int RID_SIZE = 8;
+    const int KEY_SIZE = 4;
+
     BTLeafNode(){
-        numKeys = 0;
-        buffer = new int[PageFile::PAGE_SIZE/4];
+        buffer = new char[PageFile::PAGE_SIZE];
+        nextNode = (int*)(buffer + MAX_ENTRIES*ENTRY_SIZE);
     }
    /**
     * Insert the (key, rid) pair to the node.
@@ -108,9 +110,25 @@ class BTLeafNode {
     * The main memory buffer for loading the content of the disk page 
     * that contains the node.
     */
-    int buffer[PageFile::PAGE_SIZE/4];
+    
+    struct BuffWrapper
+    {
+        int keyCount;
+        struct {
+            RecordId rid;
+            int key;
+        } entries[(PageFile::PAGE_SIZE-ENTRY_SIZE-4)/ENTRY_SIZE]; //1024 - 12 - 4 all divided by 12
+        PageId nextPage;
+        char garbage[8];
+    };
+    union {
+        char raw_buff[PageFile::PAGE_SIZE];
+        BuffWrapper nodeData;
+    } buff;
 }; 
 
+//-----------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 
 /**
  * BTNonLeafNode: The class representing a B+tree nonleaf node.
