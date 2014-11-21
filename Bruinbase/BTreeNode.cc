@@ -48,6 +48,7 @@ RC BTLeafNode::insert(int key, const RecordId& rid)
     if(getKeyCount() >= MAX_ENTRIES){
         BTLeafNode newNode;
         int sibKey;
+        //TODO: Think about how to insert the sibkey into the parent
         int result = insertAndSplit(key, rid, newNode, sibKey);
         return result;
     } else{
@@ -77,8 +78,10 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
                               BTLeafNode& sibling, int& siblingKey)
 { 
     int half = MAX_ENTRIES / 2;
-    RecordId* splitPoint = buffer+(half*3); //12 bytes in each entry
-    sibling.buffer = (int*)splitPoint;
+    memcpy(sibling.buff.nodeData.entries, buff.nodeData.entries+half, MAX_ENTRIES-half);
+    buff.nodeData.keyCount = half;
+    sibling.buff.nodeData.keyCount = MAX_ENTRIES - half;
+    siblingKey = sibling.buff.nodeData.entries[0];
     return 0; 
 }
 
