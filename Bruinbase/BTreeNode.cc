@@ -14,7 +14,7 @@ BTLeafNode::~BTLeafNode(){
  */
 RC BTLeafNode::read(PageId pid, const PageFile& pf)
 { 
-    int status = pf.read(pid, buff.rawBuff);
+    int status = pf.read(pid, buff.raw_buff);
     return status;
 }
     
@@ -26,7 +26,7 @@ RC BTLeafNode::read(PageId pid, const PageFile& pf)
  */
 RC BTLeafNode::write(PageId pid, PageFile& pf)
 { 
-    int status = pf.write(pid, buff.rawBuff);
+    int status = pf.write(pid, buff.raw_buff);
     return status;
 }
 
@@ -50,6 +50,11 @@ RC BTLeafNode::insert(int key, const RecordId& rid)
         int sibKey;
         //TODO: Think about how to insert the sibkey into the parent
         int result = insertAndSplit(key, rid, newNode, sibKey);
+        if(result){
+            PageFile pf;
+            int pid = pf.endPid();
+            //Write?
+        }
         return result;
     } else{
         // RecordId* rLoc = buffer+numKeys*3+2; //Entries are ENTRY_SIZE bytes, rid's are 8 bytes, thus add 2 afterwards to get past the last rid
@@ -81,7 +86,7 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
     memcpy(sibling.buff.nodeData.entries, buff.nodeData.entries+half, MAX_ENTRIES-half);
     buff.nodeData.keyCount = half;
     sibling.buff.nodeData.keyCount = MAX_ENTRIES - half;
-    siblingKey = sibling.buff.nodeData.entries[0];
+    siblingKey = sibling.buff.nodeData.entries[0].key;
     return 0; 
 }
 
@@ -158,7 +163,10 @@ RC BTLeafNode::setNextNodePtr(PageId pid)
  * @return 0 if successful. Return an error code if there is an error.
  */
 RC BTNonLeafNode::read(PageId pid, const PageFile& pf)
-{ return 0; }
+{ 
+    int status = pf.read(pid, buff.raw_buff);
+    return status;
+}
     
 /*
  * Write the content of the node to the page pid in the PageFile pf.
@@ -167,14 +175,17 @@ RC BTNonLeafNode::read(PageId pid, const PageFile& pf)
  * @return 0 if successful. Return an error code if there is an error.
  */
 RC BTNonLeafNode::write(PageId pid, PageFile& pf)
-{ return 0; }
+{
+    int status = pf.write(pid, buff.raw_buff);
+    return status;
+}
 
 /*
  * Return the number of keys stored in the node.
  * @return the number of keys in the node
  */
 int BTNonLeafNode::getKeyCount()
-{ return 0; }
+{ return buff.nodeData.keyCount; }
 
 
 /*

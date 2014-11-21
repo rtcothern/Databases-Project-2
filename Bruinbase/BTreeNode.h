@@ -18,14 +18,11 @@
  */
 class BTLeafNode {
   public:
-    const int MAX_ENTRIES = 84;
-    const int ENTRY_SIZE = 12;
-    const int RID_SIZE = 8;
-    const int KEY_SIZE = 4;
+    const static int MAX_ENTRIES = 84;
+    const static int ENTRY_SIZE = 12;
+    const static int RID_SIZE = 8;
+    const static int KEY_SIZE = 4;
 
-    BTLeafNode(){
-        buffer = new char[PageFile::PAGE_SIZE];
-    }
     ~BTLeafNode();
 
    /**
@@ -136,6 +133,8 @@ class BTLeafNode {
  */
 class BTNonLeafNode {
   public:
+    const static int MAX_ENTRIES = 255;
+    const static int ENTRY_SIZE = 4;
    /**
     * Insert a (key, pid) pair to the node.
     * Remember that all keys inside a B+tree node should be kept sorted.
@@ -205,7 +204,15 @@ class BTNonLeafNode {
     * The main memory buffer for loading the content of the disk page 
     * that contains the node.
     */
-    int buffer[PageFile::PAGE_SIZE];
+    struct BuffWrapper
+    {
+        int keyCount;
+        int entries[MAX_ENTRIES]; //(1024 - 4) all divided by 4
+    };
+    union {
+        char raw_buff[PageFile::PAGE_SIZE];
+        BuffWrapper nodeData;
+    } buff;
 }; 
 
 #endif /* BTNODE_H */
