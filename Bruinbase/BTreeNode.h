@@ -25,8 +25,9 @@ class BTLeafNode {
 
     BTLeafNode(){
         buffer = new char[PageFile::PAGE_SIZE];
-        nextNode = (int*)(buffer + MAX_ENTRIES*ENTRY_SIZE);
     }
+    ~BTLeafNode();
+
    /**
     * Insert the (key, rid) pair to the node.
     * Remember that all keys inside a B+tree node should be kept sorted.
@@ -118,7 +119,7 @@ class BTLeafNode {
             RecordId rid;
             int key;
         } entries[(PageFile::PAGE_SIZE-ENTRY_SIZE-4)/ENTRY_SIZE]; //1024 - 12 - 4 all divided by 12
-        PageId nextPage;
+        PageId nextNode;
         char garbage[8];
     };
     union {

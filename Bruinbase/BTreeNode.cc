@@ -2,6 +2,10 @@
 
 using namespace std;
 
+BTLeafNode::~BTLeafNode(){
+    //TODO Do cleanup, write???
+}
+
 /*
  * Read the content of the node from the page pid in the PageFile pf.
  * @param pid[IN] the PageId to read
@@ -31,7 +35,7 @@ RC BTLeafNode::write(PageId pid, PageFile& pf)
  * @return the number of keys in the node
  */
 int BTLeafNode::getKeyCount()
-{ return *buffer; }
+{ return buff.nodeData.keyCount; }
 
 /*
  * Insert a (key, rid) pair to the node.
@@ -42,16 +46,19 @@ int BTLeafNode::getKeyCount()
 RC BTLeafNode::insert(int key, const RecordId& rid)
 { 
     if(getKeyCount() >= MAX_ENTRIES){
-        BTLeafNode *newNode = new BTLeafNode();
+        BTLeafNode newNode;
         int sibKey;
         int result = insertAndSplit(key, rid, newNode, sibKey);
         return result;
     } else{
-        RecordId* rLoc = buffer+numKeys*3+2; //Entries are ENTRY_SIZE bytes, rid's are 8 bytes, thus add 2 afterwards to get past the last rid
-        int* kLoc = buffer+numKeys*3+4;
-        rLoc[0] = rid;
-        kLoc[1] = key;
-        numKeys++;
+        // RecordId* rLoc = buffer+numKeys*3+2; //Entries are ENTRY_SIZE bytes, rid's are 8 bytes, thus add 2 afterwards to get past the last rid
+        // int* kLoc = buffer+numKeys*3+4;
+        // rLoc[0] = rid;
+        // kLoc[1] = key;
+        // numKeys++;
+        buff.nodeData.entries[getKeyCount()].rid = rid;
+        buff.nodeData.entries[getKeyCount()].key = key;
+        buff.nodeData.keyCount++;
         return 0;
     }
 }
@@ -86,12 +93,7 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
 RC BTLeafNode::locate(int searchKey, int& eid)
 { 
     //TODO: Use binary search instead of linear
-    for(int i = 0; i < MAX_ENTRIES; i++){
-        // int* key = buffer[i*ENTRY_SIZE+8];
-        // if(*key >= searchKey){
-        //     eid = (i+5)/4;
-        //     return eid;
-        // }
+    for(int i = 0; i < buff.nodeData.keyCount; i++){
         int currentKey;
         RecordId rid;
         readEntry(i, currentKey, rid);
@@ -100,7 +102,7 @@ RC BTLeafNode::locate(int searchKey, int& eid)
             return 0;
         }
     }
-    return -1;
+    return -1; //Key with value larger than or equal to searchKey was not found
 }
 
 /*
@@ -112,11 +114,13 @@ RC BTLeafNode::locate(int searchKey, int& eid)
  */
 RC BTLeafNode::readEntry(int eid, int& key, RecordId& rid)
 {
-    int offset = eid*ENTRY_SIZE;
-    RecordId* rLoc = (RecordId*)(buffer+offset);
-    int* kLoc = (int*)(buffer+offset+RID_SIZE); //Go to offset, then go 8 more bytes to get to key
-    rid = rLoc[0];
-    key = kLoc[0];
+    // int offset = eid*ENTRY_SIZE;
+    // RecordId* rLoc = (RecordId*)(buffer+offset);
+    // int* kLoc = (int*)(buffer+offset+RID_SIZE); //Go to offset, then go 8 more bytes to get to key
+    // rid = rLoc[0];
+    // key = kLoc[0];
+    rid = buff.nodeData.entries[eid].rid;
+    key = buff.nodeData.entries[eid].key;
     return 0;
 }
 
@@ -126,8 +130,7 @@ RC BTLeafNode::readEntry(int eid, int& key, RecordId& rid)
  */
 PageId BTLeafNode::getNextNodePtr()
 {
-    PageId* nextNode = (int*)(buffer + MAX_ENTRIES*ENTRY_SIZE);
-    return *nextNode;
+    return buff.nodeData.nextNode;
 }
 
 /*
@@ -137,8 +140,7 @@ PageId BTLeafNode::getNextNodePtr()
  */
 RC BTLeafNode::setNextNodePtr(PageId pid)
 { 
-    PageId* nextNode = (int*)(buffer + MAX_ENTRIES*ENTRY_SIZE);
-    *nextNode = pid;
+    buff.nodeData.nextNode = pid;
     return 0;
 }
 
