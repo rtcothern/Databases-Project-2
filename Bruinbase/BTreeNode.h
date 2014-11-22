@@ -18,13 +18,8 @@
  */
 class BTLeafNode {
   public:
-    const static int MAX_ENTRIES = 84;
-    const static int ENTRY_SIZE = 12;
-    const static int RID_SIZE = 8;
-    const static int KEY_SIZE = 4;
-    
-    BTLeafNode() : mySibling(NULL), myParent(NULL){
-    };
+
+    BTLeafNode();
 
    /**
     * Insert the (key, rid) pair to the node.
@@ -53,7 +48,7 @@ class BTLeafNode {
     * and output the eid (entry id) whose key value &gt;= searchKey.
     * Remember that keys inside a B+tree node are sorted.
     * @param searchKey[IN] the key to search for.
-    * @param eid[OUT] the entry number that contains a key larger              
+    * @param eid[OUT] the entry number that contains a key larger
     *                 than or equalty to searchKey.
     * @return 0 if successful. Return an error code if there is an error.
     */
@@ -70,14 +65,14 @@ class BTLeafNode {
 
    /**
     * Return the pid of the next slibling node.
-    * @return the PageId of the next sibling node 
+    * @return the PageId of the next sibling node
     */
     PageId getNextNodePtr();
 
 
    /**
     * Set the next slibling node PageId.
-    * @param pid[IN] the PageId of the next sibling node 
+    * @param pid[IN] the PageId of the next sibling node
     * @return 0 if successful. Return an error code if there is an error.
     */
     RC setNextNodePtr(PageId pid);
@@ -87,7 +82,7 @@ class BTLeafNode {
     * @return the number of keys in the node
     */
     int getKeyCount();
- 
+
    /**
     * Read the content of the node from the page pid in the PageFile pf.
     * @param pid[IN] the PageId to read
@@ -95,7 +90,7 @@ class BTLeafNode {
     * @return 0 if successful. Return an error code if there is an error.
     */
     RC read(PageId pid, const PageFile& pf);
-    
+
    /**
     * Write the content of the node to the page pid in the PageFile pf.
     * @param pid[IN] the PageId to write to
@@ -104,29 +99,31 @@ class BTLeafNode {
     */
     RC write(PageId pid, PageFile& pf);
 
+  // TODO: comment out 'private'
   private:
+    // TODO: Ensure that size of structure is appropriate
+    const static int MAX_ENTRIES = 84;
+
    /**
-    * The main memory buffer for loading the content of the disk page 
+    * The main memory buffer for loading the content of the disk page
     * that contains the node.
     */
-    BTLeafNode* mySibling;
-    BTNonLeafNode* myParent;
+    struct BuffEntry {
+        RecordId rid;
+        int key;
+    };
     struct BuffWrapper
     {
         int keyCount;
-        struct {
-            RecordId rid;
-            int key;
-        } entries[(PageFile::PAGE_SIZE-ENTRY_SIZE-4)/ENTRY_SIZE]; //1024 - 12 - 4 all divided by 12
+        BuffEntry entries[MAX_ENTRIES];
         PageId nextNode;
-        PageId parentNode;
-        char garbage[4];
+        char garbage[8];
     };
     union {
         char raw_buff[PageFile::PAGE_SIZE];
         BuffWrapper nodeData;
     } buff;
-}; 
+};
 
 //-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
@@ -136,8 +133,8 @@ class BTLeafNode {
  */
 class BTNonLeafNode {
   public:
-    const static int MAX_ENTRIES = 254;
-    const static int ENTRY_SIZE = 4;
+    BTNonLeafNode();
+
    /**
     * Insert a (key, pid) pair to the node.
     * Remember that all keys inside a B+tree node should be kept sorted.
@@ -160,6 +157,18 @@ class BTNonLeafNode {
     * @return 0 if successful. Return an error code if there is an error.
     */
     RC insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, int& midKey);
+
+   /**
+    * ******************* ADDED ********************
+    * Find the index entry whose key value is larger than or equal to searchKey
+    * and output the eid (key entry id) whose key value >= searchKey.
+    * Remember that keys inside a B+tree node are sorted.
+    * @param searchKey[IN] the key to search for.
+    * @param eid[OUT] the key entry number that contains a key larger
+    *                 than or equal to searchKey.
+    * @return 0 if successful. Return an error code if there is an error.
+    */
+    RC locate(int searchKey, int& eid);
 
    /**
     * Given the searchKey, find the child-node pointer to follow and
@@ -193,7 +202,7 @@ class BTNonLeafNode {
     * @return 0 if successful. Return an error code if there is an error.
     */
     RC read(PageId pid, const PageFile& pf);
-    
+
    /**
     * Write the content of the node to the page pid in the PageFile pf.
     * @param pid[IN] the PageId to write to
@@ -202,23 +211,26 @@ class BTNonLeafNode {
     */
     RC write(PageId pid, PageFile& pf);
 
+  // TODO: comment out 'private'
   private:
+    // Let x=MAX_KEYS. 4x + 4(x+1) + 4 = 1024
+    const static int MAX_KEYS = 127;
+    const static int MAX_PAGES = MAX_KEYS + 1;
    /**
-    * The main memory buffer for loading the content of the disk page 
+    * The main memory buffer for loading the content of the disk page
     * that contains the node.
     */
     struct BuffWrapper
     {
         int keyCount;
-        PageId parentNode;
-        PageId pageEntries[MAX_ENTRIES/2]; //(1024 - 4) all divided by 4
-        int keyEntries[MAX_ENTRIES/2-1];
-        char garbage[4];
+        PageId pageEntries[MAX_PAGES];
+        int keyEntries[MAX_KEYS];
+        // No garbage space needed
     };
     union {
         char raw_buff[PageFile::PAGE_SIZE];
         BuffWrapper nodeData;
     } buff;
-}; 
+};
 
 #endif /* BTNODE_H */
