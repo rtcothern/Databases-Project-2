@@ -14,6 +14,7 @@ BTLeafNode::~BTLeafNode(){
  */
 RC BTLeafNode::read(PageId pid, const PageFile& pf)
 { 
+
     int status = pf.read(pid, buff.raw_buff);
     return status;
 }
@@ -27,6 +28,16 @@ RC BTLeafNode::read(PageId pid, const PageFile& pf)
 RC BTLeafNode::write(PageId pid, PageFile& pf)
 { 
     int status = pf.write(pid, buff.raw_buff);
+    if(mySibling){
+        mySibling->write(pf.endPid(), pf);
+        delete mySibling;
+        mySibling = NULL;
+    }
+    if(myParent){
+        myParent->write(buff.nodeData.parentNode, pf);
+        delete myParent;
+        myParent = NULL;
+    }
     return status;
 }
 
@@ -46,15 +57,21 @@ int BTLeafNode::getKeyCount()
 RC BTLeafNode::insert(int key, const RecordId& rid)
 { 
     if(getKeyCount() >= MAX_ENTRIES){
-        BTLeafNode newNode;
+        BTLeafNode* newSib = new BTLeafNode();
         int sibKey;
         //TODO: Think about how to insert the sibkey into the parent
-        int result = insertAndSplit(key, rid, newNode, sibKey);
+        int result = insertAndSplit(key, rid, *newSib, sibKey);
 
         if(result){
-            PageFile pf;
-            int pid = pf.endPid();
-            //Write?
+            if(mySibling){
+                newSib->mySibling = mySibling;
+            }
+            if(!myParent){
+                myParent = new BTNonLeafNode();
+            }
+            myParent->
+            mySibling = newSib;
+
         }
         return result;
     } else{

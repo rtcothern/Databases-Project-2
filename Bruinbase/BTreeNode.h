@@ -22,8 +22,9 @@ class BTLeafNode {
     const static int ENTRY_SIZE = 12;
     const static int RID_SIZE = 8;
     const static int KEY_SIZE = 4;
-
-    ~BTLeafNode();
+    
+    BTLeafNode() : mySibling(NULL), myParent(NULL){
+    };
 
    /**
     * Insert the (key, rid) pair to the node.
@@ -108,7 +109,8 @@ class BTLeafNode {
     * The main memory buffer for loading the content of the disk page 
     * that contains the node.
     */
-    
+    BTLeafNode* mySibling;
+    BTNonLeafNode* myParent;
     struct BuffWrapper
     {
         int keyCount;
