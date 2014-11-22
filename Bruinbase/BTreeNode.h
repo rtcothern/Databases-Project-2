@@ -117,7 +117,8 @@ class BTLeafNode {
             int key;
         } entries[(PageFile::PAGE_SIZE-ENTRY_SIZE-4)/ENTRY_SIZE]; //1024 - 12 - 4 all divided by 12
         PageId nextNode;
-        char garbage[8];
+        PageId parentNode;
+        char garbage[4];
     };
     union {
         char raw_buff[PageFile::PAGE_SIZE];
@@ -133,7 +134,7 @@ class BTLeafNode {
  */
 class BTNonLeafNode {
   public:
-    const static int MAX_ENTRIES = 255;
+    const static int MAX_ENTRIES = 254;
     const static int ENTRY_SIZE = 4;
    /**
     * Insert a (key, pid) pair to the node.
@@ -207,7 +208,10 @@ class BTNonLeafNode {
     struct BuffWrapper
     {
         int keyCount;
-        int entries[MAX_ENTRIES]; //(1024 - 4) all divided by 4
+        PageId parentNode;
+        PageId pageEntries[MAX_ENTRIES/2]; //(1024 - 4) all divided by 4
+        int keyEntries[MAX_ENTRIES/2-1];
+        char garbage[4];
     };
     union {
         char raw_buff[PageFile::PAGE_SIZE];

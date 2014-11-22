@@ -50,6 +50,7 @@ RC BTLeafNode::insert(int key, const RecordId& rid)
         int sibKey;
         //TODO: Think about how to insert the sibkey into the parent
         int result = insertAndSplit(key, rid, newNode, sibKey);
+
         if(result){
             PageFile pf;
             int pid = pf.endPid();
@@ -57,11 +58,7 @@ RC BTLeafNode::insert(int key, const RecordId& rid)
         }
         return result;
     } else{
-        // RecordId* rLoc = buffer+numKeys*3+2; //Entries are ENTRY_SIZE bytes, rid's are 8 bytes, thus add 2 afterwards to get past the last rid
-        // int* kLoc = buffer+numKeys*3+4;
-        // rLoc[0] = rid;
-        // kLoc[1] = key;
-        // numKeys++;
+        //TODO correct insertion, using locate not just at the end of the buffer
         buff.nodeData.entries[getKeyCount()].rid = rid;
         buff.nodeData.entries[getKeyCount()].key = key;
         buff.nodeData.keyCount++;
