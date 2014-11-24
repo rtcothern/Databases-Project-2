@@ -8,5 +8,5 @@ Partners:
     Email: rtcothern@gmail.com
 
 Collaboration:
-    For part A, we used pair programming to write the modifications
-    in person.
+    For parts A and B, we used pair programming to write the
+    modifications in person.

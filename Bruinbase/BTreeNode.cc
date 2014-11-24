@@ -341,11 +341,10 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
 
     const int half = MAX_KEYS / 2;
     midKey = buff.nodeData.keyEntries[half];
-    // TODO: Worry if midKey has any meaning other than siblingKey
-    // This is worrisome because it has a different name and description,
-    // but the effective meaning is the same: "This key should be inserted
-    // to the parent". Therefore, I am assuming it is the same as
-    // siblingKey in the other insertAndSplit.
+    // Because duplicate keys are not allowed, there is nothing to worry
+    // about regarding splitting at the first instance of a key (if a key
+    // is repeated many times, then splitting in the middle of such a sequence
+    // would cause a violation once the middle key is placed in the root).
 
 
     // Before we do any work, we can update the keyCount
@@ -357,7 +356,7 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
         // we can save time on an insert by placing it where
         // necessary.
         bool found = false;
-        int i = half, j = 0;
+        int i = half + 1, j = 0;
         for(; i < MAX_KEYS; i++, j++) {
             if(!found && buff.nodeData.keyEntries[i] >= key) {
                 // We have finally found the spot we need
@@ -372,8 +371,8 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
                 found = true;
             } else {
                 // Just do a normal data copy
-                // Note that the left-most node is left uninitialized :)
-                sibling.buff.nodeData.keyEntries [j  ] = buff.nodeData.keyEntries    [i  ];
+                // Note that the left-most pointer is left uninitialized :)
+                sibling.buff.nodeData.keyEntries [j  ] = buff.nodeData.keyEntries [i  ];
                 sibling.buff.nodeData.pageEntries[j+1] = buff.nodeData.pageEntries[i+1];
             }
         }
@@ -386,13 +385,14 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
 
         // Now we must set the appropriate keyCount
         // We must include an addition of 1 for the new entry
-        sibling.buff.nodeData.keyCount = MAX_KEYS - half + 1;
+        // Note, we are starting our count at half+1 since half was the midkey
+        sibling.buff.nodeData.keyCount = MAX_KEYS -(half + 1) + 1;
     } else {
         // We should not insert it in the sibling. We
         // should insert it here and do a memcpy
-        memcpy(sibling.buff.nodeData.keyEntries , buff.nodeData.keyEntries+half, MAX_KEYS-half);
-        memcpy(sibling.buff.nodeData.pageEntries, buff.nodeData.pageEntries+half+1, MAX_KEYS-half+1);
-        sibling.buff.nodeData.keyCount = MAX_KEYS - half;
+        memcpy(sibling.buff.nodeData.keyEntries , buff.nodeData.keyEntries+half+1, MAX_KEYS-(half+1));
+        memcpy(sibling.buff.nodeData.pageEntries, buff.nodeData.pageEntries+half+1+1, MAX_PAGES-(half+1+1));
+        sibling.buff.nodeData.keyCount = MAX_KEYS - (half+1);
 
         // Now we can just call our insert routine to insert
         // the proper values. Remember that keyCount was fixed above,
