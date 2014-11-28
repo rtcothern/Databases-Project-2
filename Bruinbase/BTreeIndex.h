@@ -33,6 +33,7 @@ typedef struct {
  */
 class BTreeIndex {
  public:
+    static const int META_PID = 0;
   BTreeIndex();
 
   /**

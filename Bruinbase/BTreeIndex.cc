@@ -29,7 +29,18 @@ BTreeIndex::BTreeIndex()
  */
 RC BTreeIndex::open(const string& indexname, char mode)
 {
-    return 0;
+    RC openRes = pf.open(indexname,mode);
+    if(openRes == 0){
+        char temp[PafeFile::PAGE_SIZE];
+        RC readRes = pf.read(META_PID, temp);
+        if(readRes == 0){
+            memcpy(&rootPid, temp, 4);
+            memcpy(&treeHeight, temp+4, 4);
+        } else{
+            return readRes;
+        }
+    }
+    return openRes;
 }
 
 /*
@@ -38,7 +49,12 @@ RC BTreeIndex::open(const string& indexname, char mode)
  */
 RC BTreeIndex::close()
 {
-    return 0;
+    char temp[PageFile::PAGE_SIZE];
+    memcpy(temp, &rootPid, 4);
+    memcpy(temp+4, &treeHeight, 4);
+    RC writeRes = pf.write(META_PID,temp);
+    if(writeRes != 0) return writeRes;
+    return pf.close();
 }
 
 /*
