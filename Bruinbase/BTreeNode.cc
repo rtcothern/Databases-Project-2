@@ -440,14 +440,17 @@ RC BTNonLeafNode::locateChildPtr(int searchKey, PageId& pid)
 {
     int eid;
     int status = locate(searchKey, eid);
+    int pentry = eid;
     if(status != 0) {
         // If we could not find the key, return the error.
-        return status;
+        pentry = keyCount;
+    } else if(buff.nodeData.keyEntries[eid] == searchKey) {
+        pentry = eid + 1;
     }
 
     // Now find the appropriate pid. We will need that
     // location plus one
-    pid = buff.nodeData.pageEntries[eid + 1];
+    pid = buff.nodeData.pageEntries[pentry];
 
     return 0;
 }
