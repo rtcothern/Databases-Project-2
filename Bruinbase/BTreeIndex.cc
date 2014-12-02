@@ -32,7 +32,7 @@ RC BTreeIndex::open(const string& indexname, char mode)
 {
     RC openRes = pf.open(indexname,mode);
     if(openRes == 0){
-        char temp[PafeFile::PAGE_SIZE];
+        char temp[PageFile::PAGE_SIZE];
         RC readRes = pf.read(META_PID, temp);
         if(readRes == 0){
             memcpy(&rootPid, temp, sizeof(rootPid));
@@ -62,7 +62,7 @@ RC BTreeIndex::insertRecursive(int             key,
                                const RecordId& rid,
                                PageId          pid,
                                int             currentHeight,
-                               int&            outKey
+                               int&            outKey,
                                PageId&         outPid)
 {
     RC result;
@@ -98,7 +98,7 @@ RC BTreeIndex::insertRecursive(int             key,
             if(result != 0) {
                 BTNonLeafNode sibling;
                 int midKey;
-                result = leaf.insertAndSplit(possibleKey, possiblePid, sibling, midKey);
+                result = node.insertAndSplit(possibleKey, possiblePid, sibling, midKey);
                 if(result != 0) {
                     return result;
                 }
@@ -181,7 +181,7 @@ RC BTreeIndex::insert(int key, const RecordId& rid)
             return result;
         }
         rootPid = pf.endPid(); // Should be 1
-        result = root.write(pid, pf);
+        result = root.write(rootPid, pf);
         if(result != 0) return result;
         treeHeight++;
     } else {
