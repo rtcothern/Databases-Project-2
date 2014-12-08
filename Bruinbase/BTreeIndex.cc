@@ -19,6 +19,7 @@ BTreeIndex::BTreeIndex()
 {
     rootPid    = -1;
     treeHeight =  0;
+    pfMode     = 'r';
 }
 
 /*
@@ -30,8 +31,9 @@ BTreeIndex::BTreeIndex()
  */
 RC BTreeIndex::open(const string& indexname, char mode)
 {
-    RC openRes = pf.open(indexname,mode);
-    if(openRes == 0){
+    pfMode = mode;
+    RC openRes = pf.open(indexname, mode);
+    if(openRes == 0 && pf.endPid() > 0) {
         char temp[PageFile::PAGE_SIZE];
         RC readRes = pf.read(META_PID, temp);
         if(readRes == 0){
@@ -50,11 +52,13 @@ RC BTreeIndex::open(const string& indexname, char mode)
  */
 RC BTreeIndex::close()
 {
-    char temp[PageFile::PAGE_SIZE];
-    memcpy(temp, &rootPid, sizeof(rootPid));
-    memcpy(temp + sizeof(rootPid), &treeHeight, sizeof(treeHeight));
-    RC writeRes = pf.write(META_PID,temp);
-    if(writeRes != 0) return writeRes;
+    if(pfMode == 'w') {
+        char temp[PageFile::PAGE_SIZE];
+        memcpy(temp, &rootPid, sizeof(rootPid));
+        memcpy(temp + sizeof(rootPid), &treeHeight, sizeof(treeHeight));
+        RC writeRes = pf.write(META_PID,temp);
+        if(writeRes != 0) return writeRes;
+    }
     return pf.close();
 }
 
@@ -280,11 +284,17 @@ RC BTreeIndex::locate(int searchKey, IndexCursor& cursor)
  */
 RC BTreeIndex::readForward(IndexCursor& cursor, int& key, RecordId& rid)
 {
-    // char temp[PageFile::PAGE_SIZE];
-    // RC readRes = pf.read(cursor.pid, temp);
+    if(cursor.pid == -1) {
+        return -7;
+    }
     BTLeafNode leaf;
     RC readRes = leaf.read(cursor.pid, pf);
     if(readRes != 0) return readRes;
     RC readEntryRes = leaf.readEntry(cursor.eid, key, rid);
+    cursor.eid++;
+    if(cursor.eid == leaf.getKeyCount()) {
+        cursor.pid = leaf.getNextNodePtr();
+        cursor.eid = 0;
+    }
     return readEntryRes;
 }
