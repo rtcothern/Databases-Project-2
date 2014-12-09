@@ -112,12 +112,6 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
     // Before we do any work, we can update the keyCount
     buff.nodeData.keyCount = half;
 
-    // Because we do not have a 'pid' for the sibling, we
-    // must wait for our caller to set our pid to the pid of the
-    // sibling.
-    // TODO: Make sure BTreeIndex does this when calling us!
-    sibling.buff.nodeData.nextNode = buff.nodeData.nextNode;
-
     if(key >= siblingKey) {
         // We must insert the key into the sibling.
         // Use a loop to copy instead of memcpy, so that

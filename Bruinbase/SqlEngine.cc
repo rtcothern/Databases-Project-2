@@ -185,6 +185,8 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   }
 
   int count = 0;
+  // TODO: Optimize count
+  // TODO: fix no gt
 
   if(!noResults) {
     if(validIndex && useIndex) {
@@ -221,9 +223,8 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
       IndexCursor cursor;
       rc = index.locate(minKey, cursor);
       if(rc != 0) {
-        // TODO: in case nothing found, don't die :)
-        fprintf(stderr, "Error code %d after locate attempt for %d.\n", rc, minKey);
-        goto exit_select;
+        // Nothing found by locate; no results
+        goto maybe_count;
       }
       for(;;) {
         if(cursor.pid == -1) {
@@ -375,6 +376,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
     }
   }
 
+  maybe_count:
   // print matching tuple count if "select count(*)"
   if (attr == 4) {
     fprintf(stdout, "%d\n", count);
@@ -390,7 +392,6 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 
 RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 {
-  fprintf(stderr, "Load called!\n");
   RecordFile rf;
   RecordId rid;
   int result;
@@ -403,8 +404,7 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 
   result = rf.open(table + ".tbl", 'w');
   if(result != 0) return result;
-
-  // TODO: Care about file not existing/filesystem errors
+  
   ifstream input(loadfile.c_str());
   if(!input) {
     // Error
