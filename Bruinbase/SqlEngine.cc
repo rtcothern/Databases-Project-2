@@ -15,6 +15,7 @@
 #include "Bruinbase.h"
 #include "SqlEngine.h"
 #include "BTreeIndex.h"
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -33,6 +34,11 @@ RC SqlEngine::run(FILE* commandline)
                // SqlParser.y by bison (bison is GNU equivalent of yacc)
 
   return 0;
+}
+
+inline bool fileExists(const std::string& name) {
+  struct stat buffer;   
+  return (stat (name.c_str(), &buffer) == 0); 
 }
 
 RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
@@ -56,6 +62,13 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   // Set validIndex if it worked
   BTreeIndex index;
   bool validIndex;
+  if (fileExists(table+".idx")){
+    RC result = index.open(table+".idx", 'r');
+    if(result != 0) return result;
+    validIndex = true;
+  } else {
+    validIndex = false;
+  }
   //////// TODO
 
   bool useIndex     = false;
@@ -360,6 +373,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 
   // close the table file and return
   exit_select:
+  index.close();
   rf.close();
   return rc;
 }

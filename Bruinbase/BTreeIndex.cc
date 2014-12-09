@@ -116,10 +116,9 @@ RC BTreeIndex::insertRecursive(int             key,
 
                 outKey = midKey;
                 outPid = siblingPid;
-            }
-
-            return node.write(pid, pf);
+            }    
         }
+        return node.write(pid, pf);
     } else if(currentHeight == 1) {
         BTLeafNode leaf;
         result = leaf.read(pid, pf);
@@ -184,7 +183,7 @@ RC BTreeIndex::insert(int key, const RecordId& rid)
             // Should never happen, but better safe than sorry!
             return result;
         }
-        rootPid = pf.endPid(); // Should be 1
+        rootPid = 1;//pf.endPid(); This is 0 actually // Should be 1
         result = root.write(rootPid, pf);
         if(result != 0) return result;
         treeHeight++;

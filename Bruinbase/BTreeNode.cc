@@ -8,6 +8,11 @@ BTLeafNode::BTLeafNode()
     // We are using '-1' for an invalid page
     buff.nodeData.keyCount = 0;
     buff.nodeData.nextNode = -1;
+    for(int i = 0; i < MAX_ENTRIES; i++){
+        buff.nodeData.entries[i].rid.pid = -1;
+        buff.nodeData.entries[i].rid.sid = -1;
+        buff.nodeData.entries[i].key = -1;
+    }
 }
 
 /*
@@ -240,6 +245,11 @@ BTNonLeafNode::BTNonLeafNode() {
     // "invalid" and can be overwritten only by initializeRoot.
     buff.nodeData.keyCount = 0;
     buff.nodeData.pageEntries[0] = -1;
+    /*for(int i = 0; i < MAX_ENTRIES; i++){
+        buff.nodeData.entries[i].rid.pid = -1;
+        buff.nodeData.entries[i].rid.sid = -1;
+        buff.nodeData.entries[i].key = -1;
+    }*/
 }
 
 /*
