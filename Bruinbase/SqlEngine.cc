@@ -78,12 +78,18 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   int  equalsKey    = -1;
   bool gtExists     = false;
   bool gtNotGte     = true; // Greater-than, not Greater-than-or-equal
-  int  gtKey        = -1;
+  int  gtKey        = std::numeric_limits<int>::min();
   bool ltExists     = false;
   bool ltNotLte     = true; // Less-than, not Less-than-or-equal
-  int  ltKey        = -1;
+  int  ltKey        = std::numeric_limits<int>::max();
 
   bool needValue    = attr == 2 || attr == 3;
+
+  if (cond.size() == 0 && attr == 4){
+    // IndexCursor cursor;
+    // index.locate(std::numeric_limits<int>::max(),cursor);
+    useIndex = true;
+  }
 
   for (unsigned i = 0; i < cond.size(); i++) {
     if(cond[i].attr == 1) {
