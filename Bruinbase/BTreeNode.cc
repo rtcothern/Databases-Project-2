@@ -125,21 +125,19 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
         // necessary.
         bool found = false;
         int i = half, j = 0;
-        for(; i < MAX_ENTRIES; i++, j++) {
+        for(; i < MAX_ENTRIES; j++) {
             if(!found && buff.nodeData.entries[i].key >= key) {
                 // We have finally found the spot we need
                 // Insert the new key right here
                 BuffEntry temp = {rid, key};
                 sibling.buff.nodeData.entries[j] = temp;
 
-                // Increment j and let the process continue on
-                j++;
-
                 // Flag us for the future
                 found = true;
             } else {
                 // Just do a normal data copy
                 sibling.buff.nodeData.entries[j] = buff.nodeData.entries[i];
+                i++;
             }
         }
 
@@ -367,15 +365,12 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
         // necessary.
         bool found = false;
         int i = half + 1, j = 0;
-        for(; i < MAX_KEYS; i++, j++) {
+        for(; i < MAX_KEYS; j++) {
             if(!found && buff.nodeData.keyEntries[i] >= key) {
                 // We have finally found the spot we need
                 // Insert the new key right here
                 sibling.buff.nodeData.keyEntries [j  ] = key;
                 sibling.buff.nodeData.pageEntries[j+1] = pid;
-
-                // Increment j and let the process continue on
-                j++;
 
                 // Flag us for the future
                 found = true;
@@ -384,6 +379,8 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
                 // Note that the left-most pointer is left uninitialized :)
                 sibling.buff.nodeData.keyEntries [j  ] = buff.nodeData.keyEntries [i  ];
                 sibling.buff.nodeData.pageEntries[j+1] = buff.nodeData.pageEntries[i+1];
+
+                i++;
             }
         }
 
@@ -436,7 +433,7 @@ RC BTNonLeafNode::locate(int searchKey, int& eid)
     }
     // Key with value larger than or equal to
     // searchKey was not found
-    return -1;
+    return -1456;
 }
 
 /*
@@ -460,6 +457,10 @@ RC BTNonLeafNode::locateChildPtr(int searchKey, PageId& pid)
     // Now find the appropriate pid. We will need that
     // location plus one
     pid = buff.nodeData.pageEntries[pentry];
+
+    if(pid == -1) {
+      return -8372;
+    }
 
     return 0;
 }

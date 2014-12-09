@@ -37,8 +37,8 @@ RC SqlEngine::run(FILE* commandline)
 }
 
 inline bool fileExists(const std::string& name) {
-  struct stat buffer;   
-  return (stat (name.c_str(), &buffer) == 0); 
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
 }
 
 RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
@@ -69,7 +69,6 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   } else {
     validIndex = false;
   }
-  //////// TODO
 
   bool useIndex     = false;
 
@@ -83,7 +82,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   bool ltExists     = false;
   bool ltNotLte     = true; // Less-than, not Less-than-or-equal
   int  ltKey        = -1;
-  
+
   bool needValue    = attr == 2 || attr == 3;
 
   for (unsigned i = 0; i < cond.size(); i++) {
@@ -171,7 +170,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
         noResults = true;
       }
     }
-    
+
     if(ltExists) {
       if(ltNotLte && ltKey == std::numeric_limits<int>::min()) { // x < -2147483648
         noResults = true;
@@ -212,33 +211,38 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
           maxKey = std::numeric_limits<int>::max();
         }
       }
-      
+
       IndexCursor cursor;
       rc = index.locate(minKey, cursor);
       if(rc != 0) {
+        // TODO: in case nothing found, don't die :)
+        fprintf(stderr, "Error code %d after locate attempt for %d.\n", rc, minKey);
         goto exit_select;
       }
       for(;;) {
+        if(cursor.pid == -1) {
+          // No more pids
+          break;
+        }
+
         rc = index.readForward(cursor, key, rid);
         if(rc != 0) {
+          fprintf(stderr, "Error code %d after readForward attempt with key %d.\n", rc, key);
           goto exit_select;
         }
         if(key > maxKey) {
           // Past the max range
           break;
         }
-        if(cursor.pid == -1) {
-          // No more pids
-          break;
-        }
-        
+
         if(needValue) {
           rc = rf.read(rid, key, value);
           if(rc != 0) {
+            fprintf(stderr, "Error code %d after read attempt with key %d.\n", rc, key);
             goto exit_select;
           }
         }
-        
+
         // check the value/not-equal conditions on the tuple
         for (unsigned i = 0; i < cond.size(); i++) {
           if(cond[i].attr == 1 && cond[i].comp == SelCond::NE) {
@@ -274,7 +278,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
             }
           }
         }
-        
+
         // the condition is met for the tuple.
         // increase matching tuple counter
         count++;
@@ -287,7 +291,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
         } else if(attr == 3) {
            fprintf(stdout, "%d '%s'\n", key, value.c_str());
         }
-        
+
         next_tup2:
         if(key == maxKey) {
           // We already made sure key was not greater than maxKey
@@ -380,6 +384,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 
 RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 {
+  fprintf(stderr, "Load called!\n");
   RecordFile rf;
   RecordId rid;
   int result;
@@ -407,11 +412,17 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
     if(result != 0) return result;
 
     result = rf.append(key, value, rid);
-    if(result != 0) return result;
+    if(result != 0) {
+      fprintf(stderr, "Append of key %d failed in load\n", key);
+      return result;
+    }
 
     if(index) {
       result = possibleIndex.insert(key, rid);
-      if(result != 0) return result;
+      if(result != 0) {
+        fprintf(stderr, "Insert of key %d, pid %d failed in load\n", key, rid.pid);
+        return result;
+      }
     }
   }
   if(index) {

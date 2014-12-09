@@ -39,7 +39,7 @@ RC BTreeIndex::open(const string& indexname, char mode)
         if(readRes == 0){
             memcpy(&rootPid, temp, sizeof(rootPid));
             memcpy(&treeHeight, temp + sizeof(rootPid), sizeof(treeHeight));
-        } else{
+        } else {
             return readRes;
         }
     }
@@ -116,7 +116,7 @@ RC BTreeIndex::insertRecursive(int             key,
 
                 outKey = midKey;
                 outPid = siblingPid;
-            }    
+            }
         }
         return node.write(pid, pf);
     } else if(currentHeight == 1) {
@@ -163,7 +163,7 @@ RC BTreeIndex::insertRecursive(int             key,
         return leaf.write(pid, pf);
     }
 
-    return -1;
+    return -1234;
 }
 
 /*
@@ -186,7 +186,7 @@ RC BTreeIndex::insert(int key, const RecordId& rid)
         rootPid = 1;//pf.endPid(); This is 0 actually // Should be 1
         result = root.write(rootPid, pf);
         if(result != 0) return result;
-        treeHeight++;
+        treeHeight = 1;
     } else {
         int    possibleKey = -1;
         PageId possiblePid = -1;
@@ -196,7 +196,9 @@ RC BTreeIndex::insert(int key, const RecordId& rid)
                                  treeHeight,
                                  possibleKey,
                                  possiblePid);
-        if(result != 0) return result;
+        if(result != 0) {
+            return result;
+        }
 
         if(possibleKey != -1 && possiblePid != -1) {
             BTNonLeafNode newRoot;
@@ -241,6 +243,7 @@ RC BTreeIndex::locate(int searchKey, IndexCursor& cursor)
     if(treeHeight == 0) {
         return -1;
     }
+
 
     int currentPid = rootPid;
     int height;
