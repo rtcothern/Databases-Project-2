@@ -418,7 +418,7 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
     result = possibleIndex.close();
     if(result != 0) return result;
   }
-  return 0;
+  return rf.close();
 }
 
 RC SqlEngine::parseLoadLine(const string& line, int& key, string& value)
