@@ -286,8 +286,6 @@ int BTNonLeafNode::getKeyCount()
  * @return 0 if successful. Return an error code if the node is full.
  */
 RC BTNonLeafNode::insert(int key, PageId pid)
-    // Note that this function should insert pid to the
-    // *right* of the key
 {
     if(getKeyCount() >= MAX_KEYS) {
         return -1;
@@ -350,6 +348,9 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
     // would cause a violation once the middle key is placed in the root).
 
 
+    // Also, since we are finding the midkey /before/ the split, then the
+    // key will never equal the midkey. There will always be a unique midkey.
+    
     // Before we do any work, we can update the keyCount
     buff.nodeData.keyCount = half;
 
@@ -358,6 +359,11 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
         // Use a loop to copy instead of memcpy, so that
         // we can save time on an insert by placing it where
         // necessary.
+        
+        // Importantly, we need the midkey's right ptr to become the
+        // left-most ptr of the sibling
+        sibling.buff.nodeData.pageEntries[0] = buff.nodeData.pageEntries[half+1];
+        
         bool found = false;
         int i = half + 1, j = 0;
         for(; i < MAX_KEYS; j++) {
@@ -371,7 +377,6 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
                 found = true;
             } else {
                 // Just do a normal data copy
-                // Note that the left-most pointer is left uninitialized :)
                 sibling.buff.nodeData.keyEntries [j  ] = buff.nodeData.keyEntries [i  ];
                 sibling.buff.nodeData.pageEntries[j+1] = buff.nodeData.pageEntries[i+1];
 
@@ -392,8 +397,9 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
     } else {
         // We should not insert it in the sibling. We
         // should insert it here and do a memcpy
+        // NOTE that we are copying a total of 1 MORE page entry than key entries!
         memcpy(sibling.buff.nodeData.keyEntries , buff.nodeData.keyEntries+half+1, sizeof(buff.nodeData.keyEntries[0])*(MAX_KEYS-(half+1)));
-        memcpy(sibling.buff.nodeData.pageEntries, buff.nodeData.pageEntries+half+1+1, sizeof(buff.nodeData.pageEntries[0])*(MAX_PAGES-(half+1+1)));
+        memcpy(sibling.buff.nodeData.pageEntries, buff.nodeData.pageEntries+half+1, sizeof(buff.nodeData.pageEntries[0])*(MAX_PAGES-(half+1)));
         sibling.buff.nodeData.keyCount = MAX_KEYS - (half+1);
 
         // Now we can just call our insert routine to insert

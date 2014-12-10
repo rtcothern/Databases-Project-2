@@ -244,7 +244,6 @@ RC BTreeIndex::locate(int searchKey, IndexCursor& cursor)
         return -1;
     }
 
-
     int currentPid = rootPid;
     int height;
     for(height = treeHeight; height > 1; height--) {
@@ -267,11 +266,21 @@ RC BTreeIndex::locate(int searchKey, IndexCursor& cursor)
         return result;
     }
 
+    cursor.pid = currentPid;
     result = node.locate(searchKey, cursor.eid);
     if(result != 0) {
-        return result;
+        // It's quite possible that we may never find an
+        // appropriate >= value in the leaf node.
+        // For example, say we are looking for 1000
+        // and saw key 1010 in the non-leaf.
+        // We would follow the left pointer, but this
+        // might not actually take us to 1000. The max
+        // value in that node might be 910. Therefore,
+        // we need to follow the nextNodePtr and return
+        // the value from there, like an automatic 'read-forward'!
+        cursor.pid = node.getNextNodePtr();
+        cursor.eid = 0;
     }
-    cursor.pid = currentPid;
 
     return 0;
 }

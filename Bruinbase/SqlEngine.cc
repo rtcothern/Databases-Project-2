@@ -77,19 +77,13 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   bool equalsExists = false;
   int  equalsKey    = -1;
   bool gtExists     = false;
-  bool gtNotGte     = true; // Greater-than, not Greater-than-or-equal
+  bool gtNotGte     = false; // Greater-than, not Greater-than-or-equal
   int  gtKey        = std::numeric_limits<int>::min();
   bool ltExists     = false;
-  bool ltNotLte     = true; // Less-than, not Less-than-or-equal
+  bool ltNotLte     = false; // Less-than, not Less-than-or-equal
   int  ltKey        = std::numeric_limits<int>::max();
 
   bool needValue    = attr == 2 || attr == 3;
-
-  if (cond.size() == 0 && attr == 4){
-    // IndexCursor cursor;
-    // index.locate(std::numeric_limits<int>::max(),cursor);
-    useIndex = true;
-  }
 
   for (unsigned i = 0; i < cond.size(); i++) {
     if(cond[i].attr == 1) {
@@ -163,6 +157,14 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 
     if(noResults) break;
   }
+  
+  if(attr == 4 && !needValue) {
+    // If we have a count operation and DON'T need the value,
+    // then use the index for sure. Otherwise, let the prior
+    // code decide whether or not we should use the index
+    // (i.e. existence of a range, etc.)
+    useIndex = true;
+  }
 
   // Now we have gotten our expected ranges. We can rule out some work
   // if we compare the ends of the ranges.
@@ -185,9 +187,6 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   }
 
   int count = 0;
-  // TODO: Optimize count
-  // TODO: fix no gt
-
   if(!noResults) {
     if(validIndex && useIndex) {
       int minKey;
@@ -222,7 +221,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 
       IndexCursor cursor;
       rc = index.locate(minKey, cursor);
-      if(rc != 0) {
+      if(rc != 0 || cursor.pid == -1) {
         // Nothing found by locate; no results
         goto maybe_count;
       }
