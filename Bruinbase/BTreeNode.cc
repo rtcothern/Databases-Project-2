@@ -128,6 +128,7 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
 
                 // Flag us for the future
                 found = true;
+
             } else {
                 // Just do a normal data copy
                 sibling.buff.nodeData.entries[j] = buff.nodeData.entries[i];
@@ -152,7 +153,7 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
     } else {
         // We should not insert it in the sibling. We
         // should insert it here and do a memcpy
-        memcpy(sibling.buff.nodeData.entries, buff.nodeData.entries+half, MAX_ENTRIES-half);
+        memcpy(sibling.buff.nodeData.entries, buff.nodeData.entries+half, sizeof(BuffEntry) * (MAX_ENTRIES-half));
         sibling.buff.nodeData.keyCount = MAX_ENTRIES - half;
 
         // Now we can just call our insert routine to insert
@@ -391,8 +392,8 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
     } else {
         // We should not insert it in the sibling. We
         // should insert it here and do a memcpy
-        memcpy(sibling.buff.nodeData.keyEntries , buff.nodeData.keyEntries+half+1, MAX_KEYS-(half+1));
-        memcpy(sibling.buff.nodeData.pageEntries, buff.nodeData.pageEntries+half+1+1, MAX_PAGES-(half+1+1));
+        memcpy(sibling.buff.nodeData.keyEntries , buff.nodeData.keyEntries+half+1, sizeof(buff.nodeData.keyEntries[0])*(MAX_KEYS-(half+1)));
+        memcpy(sibling.buff.nodeData.pageEntries, buff.nodeData.pageEntries+half+1+1, sizeof(buff.nodeData.pageEntries[0])*(MAX_PAGES-(half+1+1)));
         sibling.buff.nodeData.keyCount = MAX_KEYS - (half+1);
 
         // Now we can just call our insert routine to insert
